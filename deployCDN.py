@@ -34,7 +34,7 @@ KEYFILE = args.keyfile
 # deploy DNS code and chmod 711
 b = subprocess.check_output("pwd")
 print(b)
-subprocess.run(f"scp -i {KEYFILE} ./dnsserver {USERNAME}@{endpoints.DNS_SERVER}:~")
+subprocess.run(f"scp -i {KEYFILE} dnsserver {USERNAME}@{endpoints.DNS_SERVER}:~")
 subprocess.run(
     f"ssh -i {KEYFILE} {USERNAME}@{endpoints.DNS_SERVER} 'chmod 711 ~/dnsserver'"
 )

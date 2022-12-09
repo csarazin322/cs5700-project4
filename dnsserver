@@ -57,5 +57,5 @@ def respond_to_request(message):
 
 # listen to incoming requests forever
 while True:
-    message = dns_sock.recvfrom(50000)
+    message = dns_sock.recvfrom(10000)
     threading.Thread(target=respond_to_request, args=[message])
