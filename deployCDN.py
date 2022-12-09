@@ -32,12 +32,10 @@ USERNAME = args.username
 KEYFILE = args.keyfile
 
 # deploy DNS code and chmod 711
-b = subprocess.check_output("ls")
+b = subprocess.check_output("pwd")
 print(b)
-subprocess.check_output(
-    f"scp -i {KEYFILE} dnsserver {USERNAME}@{endpoints.DNS_SERVER}:~"
-)
-subprocess.check_output(
+subprocess.run(f"scp -i {KEYFILE} ./dnsserver {USERNAME}@{endpoints.DNS_SERVER}:~")
+subprocess.run(
     f"ssh -i {KEYFILE} {USERNAME}@{endpoints.DNS_SERVER} 'chmod 711 ~/dnsserver'"
 )
 
@@ -46,7 +44,7 @@ subprocess.check_output(
 for rep in endpoints.HTTP_REPLICAS:
     file_to_copy = ["httpserver", "preLoadCache.py", "topPages.py"]
     for file in file_to_copy:
-        subprocess.check_output(f"scp -i {KEYFILE} {file} {USERNAME}@{rep}:~")
-    subprocess.check_output(
+        subprocess.run(f"scp -i {KEYFILE} {file} {USERNAME}@{rep}:~")
+    subprocess.run(
         f"ssh -i {KEYFILE} {USERNAME}@{rep} 'chmod 711 ~/httpserver & python3 preLoadCache.py & rm preLoadCache.py & rm topPages.py'"
     )

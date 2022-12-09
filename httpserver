@@ -1,7 +1,13 @@
+#!/usr/bin/env python3
 from argparse import ArgumentParser
+from http import HttpConnection
+import requests
+import urllib
+import zlib
 import threading
 import endpoints
 from socket import socket, AF_INET, SOCK_DGRAM
+import sqlite3
 
 # parse arguments and store them accordingly
 parser = ArgumentParser(
@@ -31,3 +37,38 @@ ORIGIN = args.origin
 NAME = args.name
 USERNAME = args.username
 KEYFILE = args.keyfile
+
+connect_db = sqlite3.connect("web_cache.db")
+db = connect_db.cursor()
+db.execute("CREATE TABLE IF NOT EXISTS CACHE (Path TEXT, Data BLOB);")
+
+# 19920000 20 MB
+# 14940000 15 MB
+
+
+def get_data(path):
+    # check if path starts with forward slash
+    if len(path) > 0 and path[0] == "/":
+        path = path[1:]
+
+    # attempt to get compressed data from the cache db
+    db.execute("SELECT Data FROM Cache WHERE Path = :Path", {"Path": path})
+    data_or_none = db.fetchone()
+
+    # get data from origin if None or unzip and return the cached data
+    if data_or_none == None:
+        print(f"inserting {path}")
+        url = "http://" + ORIGIN + ":8080/" + path
+        url_data = requests.get(url)
+        return url_data
+    else:
+        unzipped_data = zlib.decompress(data_or_none[0])
+        return unzipped_data
+
+    # # check if path starts with forward slash
+    # if len(path) > 0 and path[0] != "/":
+    #     path = "/" + path
+
+    # url = "http://" + ORIGIN + ":8080" + path
+    # url_data = urllib.urlopen(url).read()
+    # zipped_data = zlib.compress(url_data)

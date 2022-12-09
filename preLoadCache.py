@@ -16,9 +16,9 @@ def preload_cache(origin):
         #     path = "/" + path
 
         db.execute("SELECT Data FROM Cache WHERE Path = :Path", {"Path": path})
-        path_or_none = db.fetchone()
+        data_or_none = db.fetchone()
 
-        if path_or_none == None:
+        if data_or_none == None:
             print(f"inserting {path}")
             url = "http://" + origin + ":8080/" + path
             url_data = requests.get(url)
@@ -26,6 +26,8 @@ def preload_cache(origin):
             db.execute("INSERT INTO Cache(Path,Data) VALUES(?,?)", (path, zipped_data))
         else:
             print(f"skipping {path} because it already exists")
+
+    db.connection.commit()
 
     # 19920000 20 MB
     # 14940000 15 MB
@@ -37,6 +39,5 @@ db.execute("SELECT Data FROM Cache WHERE Path = :Path", {"Path": "Main_Page"})
 nextPath = db.fetchone()
 print(zlib.decompress(nextPath[0]))
 
-db.connection.commit()
 
 db.close()
