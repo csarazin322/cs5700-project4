@@ -1,7 +1,10 @@
 from argparse import ArgumentParser
+import binascii
 import threading
 import endpoints
 from socket import socket, AF_INET, SOCK_DGRAM
+import dnslib
+import zlib
 
 # parse arguments and store them accordingly
 parser = ArgumentParser(
@@ -43,10 +46,15 @@ dns_sock.bind((IP, PORT))
 
 
 def respond_to_request(message):
+    packet = binascii.unhexlify(message)
+    decoded = dnslib.DNSRecord.parse(packet)
     return message
+
+
+# start thread that continually updates http server availability
 
 
 # listen to incoming requests forever
 while True:
-    message = dns_sock.recv(2048)
+    message = dns_sock.recvfrom(50000)
     threading.Thread(target=respond_to_request, args=[message])
