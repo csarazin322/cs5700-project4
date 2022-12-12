@@ -22,18 +22,9 @@ if args.port is None:
     raise ValueError("No value for port supplied")
 if args.origin is None:
     raise ValueError("No value for origin supplied")
-if args.name is None:
-    raise ValueError("No value for name supplied")
-if args.username is None:
-    raise ValueError("No value for username supplied")
-if args.keyfile is None:
-    raise ValueError("No value for keyfile supplied")
 
 PORT = args.port
 ORIGIN = args.origin
-NAME = args.name
-USERNAME = args.username
-KEYFILE = args.keyfile
 
 connect_db = sqlite3.connect("web_cache.db")
 db = connect_db.cursor()
