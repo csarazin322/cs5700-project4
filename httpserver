@@ -70,7 +70,7 @@ def get_data(path):
 def serve_client(client_sock: socket, ret_addr):
     req = client_sock.recvfrom(10000)
     # extract path from request
-    req_type = str(req).split("\r\n")[0]
+    req_type = req[0].decode("utf-8").split("\r\n")[0]
     req_toks = req_type.split()
     path = ""
     if req_toks[0] == "GET":
@@ -82,7 +82,7 @@ def serve_client(client_sock: socket, ret_addr):
             + "Content-Length: 0\nContent-Type: text/html\n\n"
         )
     else:
-        data = str(get_data(path))
+        data = get_data(path).decode("utf-8")
         response = (
             "HTTP/1.1 200 OK \r\n"
             + "Content-Length: "
