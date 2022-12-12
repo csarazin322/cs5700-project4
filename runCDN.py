@@ -34,12 +34,14 @@ KEYFILE = args.keyfile
 
 # start DNS script/server
 subprocess.run(
-    f"ssh -i {KEYFILE} {USERNAME}@{endpoints.DNS_SERVER} '~/dnsserver -p {PORT} -o {ORIGIN}'"
+    f"ssh -i {KEYFILE} {USERNAME}@{endpoints.DNS_SERVER} '~/dnsserver -p {PORT} -o {ORIGIN}'",
+    shell=True,
 )
 
 
 # start HTTP scritps/servers
 for rep in endpoints.HTTP_REPLICAS:
     subprocess.run(
-        f"ssh -i {KEYFILE} {USERNAME}@{rep} '~/httpserver -p {PORT} -o {ORIGIN}'"
+        f"ssh -i {KEYFILE} {USERNAME}@{rep} '~/httpserver -p {PORT} -o {ORIGIN}'",
+        shell=True,
     )

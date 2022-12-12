@@ -34,12 +34,14 @@ KEYFILE = args.keyfile
 
 # start DNS script/server
 subprocess.run(
-    f"ssh -i {KEYFILE} {USERNAME}@{endpoints.DNS_SERVER} 'pkill dnsserver -u {USERNAME}'"
+    f"ssh -i {KEYFILE} {USERNAME}@{endpoints.DNS_SERVER} 'pkill dnsserver -u {USERNAME}'",
+    shell=True,
 )
 
 
 # start HTTP scritps/servers
 for rep in endpoints.HTTP_REPLICAS:
     subprocess.run(
-        f"ssh -i {KEYFILE} {USERNAME}@{rep} 'pkill httpserver -u {USERNAME}'"
+        f"ssh -i {KEYFILE} {USERNAME}@{rep} 'pkill httpserver -u {USERNAME}'",
+        shell=True,
     )

@@ -31,20 +31,36 @@ NAME = args.name
 USERNAME = args.username
 KEYFILE = args.keyfile
 
+print(PORT)
+print(ORIGIN)
+print(NAME)
+print(USERNAME)
+print(KEYFILE)
+
 # deploy DNS code and chmod 711
 b = subprocess.check_output("pwd")
 print(b)
-subprocess.run(f"scp -i {KEYFILE} dnsserver {USERNAME}@{endpoints.DNS_SERVER}:~")
 subprocess.run(
-    f"ssh -i {KEYFILE} {USERNAME}@{endpoints.DNS_SERVER} 'chmod 711 ~/dnsserver'"
+    f"scp -i {KEYFILE} dnsserver {USERNAME}@{endpoints.DNS_SERVER}:~",
+    shell=True,
+)
+subprocess.run(
+    f"scp -i {KEYFILE} GeoLite2-City.mmdb {USERNAME}@{endpoints.DNS_SERVER}:~",
+    shell=True,
+)
+subprocess.run(
+    f"ssh -i {KEYFILE} {USERNAME}@{endpoints.DNS_SERVER} 'chmod 711 ~/dnsserver & pip install geoip2'",
+    shell=True,
 )
 
 
 # deploy HTTP server code and chmod 711
 for rep in endpoints.HTTP_REPLICAS:
-    file_to_copy = ["httpserver", "preLoadCache.py", "topPages.py"]
-    for file in file_to_copy:
-        subprocess.run(f"scp -i {KEYFILE} {file} {USERNAME}@{rep}:~")
+    # file_to_copy = ["httpserver", "preLoadCache.py", "topPages.py"]
+    subprocess.run(f"scp -i {KEYFILE} preLoadCache.py {USERNAME}@{rep}:~", shell=True)
+    subprocess.run(f"scp -i {KEYFILE} httpserver {USERNAME}@{rep}:~", shell=True)
+    subprocess.run(f"scp -i {KEYFILE} topPages.py {USERNAME}@{rep}:~", shell=True)
     subprocess.run(
-        f"ssh -i {KEYFILE} {USERNAME}@{rep} 'chmod 711 ~/httpserver & python3 preLoadCache.py & rm preLoadCache.py & rm topPages.py'"
+        f"ssh -i {KEYFILE} {USERNAME}@{rep} 'chmod 711 ~/httpserver & python3 ~/preLoadCache.py & rm ~/preLoadCache.py & rm ~/topPages.py & rm -rf ~/__pycache__'",
+        shell=True,
     )

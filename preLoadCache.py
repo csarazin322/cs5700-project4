@@ -10,7 +10,7 @@ db.execute("CREATE TABLE IF NOT EXISTS CACHE (Path TEXT, Data BLOB);")
 
 def preload_cache(origin):
 
-    for path in topPages.mostVisited[:200]:
+    for path in topPages.mostVisited[:210]:
         # # check if path starts with forward slash
         # if len(path) > 0 and path[0] != "/":
         #     path = "/" + path

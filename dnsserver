@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
-import binascii
 from math import asin, cos, sqrt
 import struct
 import sys
 import threading
-import endpoints
 from socket import socket, AF_INET, SOCK_DGRAM
-import dnslib
-import zlib
 import geoip2.database
 import geoip2.webservice
 
@@ -17,29 +13,17 @@ parser = ArgumentParser(
     prog="deployCDN", description="deploy necessary resources to set up a CDN"
 )
 parser.add_argument("-p", dest="port")
-parser.add_argument("-o", dest="origin")
 parser.add_argument("-n", dest="name")
-parser.add_argument("-u", dest="username")
-parser.add_argument("-i", dest="keyfile")
 
 args = parser.parse_args()
 
 if args.port is None:
     raise ValueError("No value for port supplied")
-if args.origin is None:
-    raise ValueError("No value for origin supplied")
 if args.name is None:
     raise ValueError("No value for name supplied")
-if args.username is None:
-    raise ValueError("No value for username supplied")
-if args.keyfile is None:
-    raise ValueError("No value for keyfile supplied")
 
-PORT = args.port
-ORIGIN = args.origin
+PORT = int(args.port)
 NAME = args.name
-USERNAME = args.username
-KEYFILE = args.keyfile
 
 # Set up IP location based routing
 geodb = geoip2.database.Reader("GeoLite2-City.mmdb")
@@ -65,15 +49,18 @@ sock.close()
 
 dns_sock = socket(AF_INET, SOCK_DGRAM)
 dns_sock.bind((IP, PORT))
+print(f"Bound to IP: {IP} and port: {PORT}")
 
 
 # Functions for processing DNS requests
 
 
 def respond_to_request(sock: socket, message: bytes, source_ip):
+    print(f"Threading for request from {source_ip}")
     # unpack header
     request = message.strip()
-    header = struct.unpack("!HHHHHH", request)
+    print(f"Request: {request}")
+    header = struct.unpack("!HHHHHH", request[:12])
 
     req_id = header[0]
     req_flags = header[1]
@@ -83,27 +70,27 @@ def respond_to_request(sock: socket, message: bytes, source_ip):
     # parse questions
     questions = request[12:]
     domain_name = ""
-    length = struct.unpack("!B", questions[0])
+    length = questions[0]
     start = 1
     end = 1
-    while length[0] != 0:
-        end = start + length[0]
+    while length != 0:
+        end = start + length
+        window = questions[start:end]
+        print(f"\nwindow len: {len(window)} and type {type(window)} and val {window}")
         if domain_name == "":
-            domain_name = struct.unpack(f"{str(length[0])}s", questions[start:end])[0]
+            domain_name = struct.unpack(f"{str(length)}s", window)[0]
         else:
             domain_name = (
-                domain_name
-                + "."
-                + struct.unpack(f"{str(length[0])}s", questions[start:end])[0]
+                domain_name + b"." + struct.unpack(f"{str(length)}s", window)[0]
             )
         start = end + 1
-        length = struct.unpack("!B", questions[end])
+        length = questions[end]
     question_type = struct.unpack("!H", questions[end + 1 : end + 3])[0]
     question_class = struct.unpack("!H", questions[end + 3 : end + 5])[0]
     end = end + 5
 
     # check domain name matches, exit if not
-    if NAME != domain_name:
+    if bytes(NAME, "utf-8") != domain_name:
         return
 
     # get closest repl and format/send response
@@ -113,8 +100,8 @@ def respond_to_request(sock: socket, message: bytes, source_ip):
     len_field = 4
     ip_split = closest_repl.split(".")
     response_body = (
-        request[12:end]
-        + "\xc0\x0c"
+        request[12 : 12 + end]
+        + b"\xc0\x0c"
         + struct.pack(
             "!HHLHBBBB",
             question_type,
@@ -129,9 +116,12 @@ def respond_to_request(sock: socket, message: bytes, source_ip):
     )
     resposne_header = (
         request[0:2]
-        + "\x81\x80"
+        + b"\x81\x80"
         + struct.pack("!HHHH", req_num_questions, req_num_answered, 0, 0)
     )
+
+    print(f"sending {resposne_header + response_body} to {source_ip}")
+
     sock.sendto(resposne_header + response_body, source_ip)
 
 
@@ -146,9 +136,10 @@ def get_distance(lat1, lon1, lat2, lon2):
 
 
 def get_closest_repl(request_ip):
-    existing_mapping = client_locs[request_ip]
+    print(f"Getting closest repl to {request_ip}")
+    existing_mapping = client_locs.get(request_ip)
     if existing_mapping == None:
-        loc = geodb.city(request_ip).location
+        loc = geodb.city(request_ip[0]).location
         min_dist = sys.maxsize
         min_repl = "139.144.30.25"  # default, Atlanta, GA
         for repl_ip, repl_loc in http_locs.items():
@@ -166,5 +157,8 @@ def get_closest_repl(request_ip):
 
 # listen to incoming requests forever
 while True:
+    print("Waiting for DNS request")
     req = dns_sock.recvfrom(10000)
-    threading.Thread(target=respond_to_request, args=[dns_sock, req[0], req[1]])
+    print(f"Attempting to thread for {req[1]}")
+    t = threading.Thread(target=respond_to_request, args=[dns_sock, req[0], req[1]])
+    t.start()
