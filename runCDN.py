@@ -33,15 +33,17 @@ KEYFILE = args.keyfile
 
 
 # start DNS script/server
-subprocess.run(
-    f"ssh -i {KEYFILE} {USERNAME}@{endpoints.DNS_SERVER} '~/dnsserver -p {PORT} -o {ORIGIN}'",
+subprocess.Popen(
+    f"ssh -i {KEYFILE} {USERNAME}@{endpoints.DNS_SERVER} '~/dnsserver -p {PORT} -n {NAME} > /dev/null &'",
     shell=True,
 )
+print("DNS running and detached")
 
 
 # start HTTP scritps/servers
 for rep in endpoints.HTTP_REPLICAS:
-    subprocess.run(
-        f"ssh -i {KEYFILE} {USERNAME}@{rep} '~/httpserver -p {PORT} -o {ORIGIN}'",
+    subprocess.Popen(
+        f"ssh -i {KEYFILE} {USERNAME}@{rep} '~/httpserver -p {PORT} -o {ORIGIN} > /dev/null &'",
         shell=True,
     )
+    print(f"{rep} running and detached")

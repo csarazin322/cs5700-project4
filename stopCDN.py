@@ -37,6 +37,7 @@ subprocess.run(
     f"ssh -i {KEYFILE} {USERNAME}@{endpoints.DNS_SERVER} 'pkill python3 -u {USERNAME}'",
     shell=True,
 )
+print("DNS stopped")
 
 
 # start HTTP scritps/servers
@@ -45,3 +46,4 @@ for rep in endpoints.HTTP_REPLICAS:
         f"ssh -i {KEYFILE} {USERNAME}@{rep} 'pkill python3 -u {USERNAME}'",
         shell=True,
     )
+    print(f"{rep} stopped")
