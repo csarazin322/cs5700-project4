@@ -45,7 +45,7 @@ subprocess.run(
     f"scp -i {KEYFILE} dnsserver {USERNAME}@{endpoints.DNS_SERVER}:~",
     shell=True,
 )
-subprocess.run(
+subprocess.Popen(
     f"scp -i {KEYFILE} GeoLite2-City.mmdb {USERNAME}@{endpoints.DNS_SERVER}:~",
     shell=True,
 )
@@ -60,13 +60,21 @@ preloading_procs: list[subprocess.Popen[bytes]] = []
 for rep in endpoints.HTTP_REPLICAS:
     # file_to_copy = ["httpserver", "preLoadCache.py", "topPages.py"]
     subprocess.run(
-        f"scp -i {KEYFILE} httpserver preLoadCache {USERNAME}@{rep}:~",
+        f"scp -i {KEYFILE} httpserver {USERNAME}@{rep}:~",
         shell=True,
     )
     p = subprocess.Popen(
-        f"ssh -i {KEYFILE} {USERNAME}@{rep} 'chmod 711 ~/httpserver ~/preLoadCache && ~/preLoadCache && rm ~/preLoadCache'",
+        f"scp -i {KEYFILE} web_cache.db {USERNAME}@{rep}:~",
         shell=True,
     )
+    subprocess.run(
+        f"ssh -i {KEYFILE} {USERNAME}@{rep} 'chmod 711 ~/httpserver'",
+        shell=True,
+    )
+    # p = subprocess.Popen(
+    #     f"ssh -i {KEYFILE} {USERNAME}@{rep} 'chmod 711 ~/httpserver ~/preLoadCache && ~/preLoadCache && rm ~/preLoadCache'",
+    #     shell=True,
+    # )
     preloading_procs.append(p)
 
 # wait for all processes to finish so user does not start servers before they are done pre-cacheing
