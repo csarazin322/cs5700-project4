@@ -48,5 +48,3 @@ for rep in endpoints.HTTP_REPLICAS:
         shell=True,
     )
     print(f"{rep} running and detached")
-
-sleep(120)

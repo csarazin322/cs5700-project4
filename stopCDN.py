@@ -49,4 +49,7 @@ for rep in endpoints.HTTP_REPLICAS:
     )
     print(f"{rep} stopped")
 
+print(
+    "Sleeping for 60 seconds to allow existing system port occupancy data to be garbage collected and become available again"
+)
 sleep(60)

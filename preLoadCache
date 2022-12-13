@@ -1002,7 +1002,7 @@ db.execute("CREATE TABLE IF NOT EXISTS CACHE (Path TEXT, Data BLOB);")
 
 def preload_cache(origin):
 
-    for path in mostVisited[:205]:
+    for path in mostVisited[:217]:
 
         db.execute("SELECT Data FROM Cache WHERE Path = :Path", {"Path": path})
         data_or_none = db.fetchone()

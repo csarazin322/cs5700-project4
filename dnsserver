@@ -62,8 +62,6 @@ def respond_to_request(sock: socket, message: bytes, source_ip):
     print(f"Request: {request}")
     header = struct.unpack("!HHHHHH", request[:12])
 
-    req_id = header[0]
-    req_flags = header[1]
     req_num_questions = header[2]
     req_num_answered = 1
 
