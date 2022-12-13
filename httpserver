@@ -30,9 +30,6 @@ connect_db = sqlite3.connect("web_cache.db")
 db = connect_db.cursor()
 db.execute("CREATE TABLE IF NOT EXISTS CACHE (Path TEXT, Data BLOB);")
 
-# 19920000 20 MB
-# 14940000 15 MB
-
 
 def get_data(path):
     connect_db_thread = sqlite3.connect("web_cache.db")

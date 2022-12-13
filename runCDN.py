@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from time import sleep
 import subprocess
 import endpoints
 
@@ -47,3 +48,5 @@ for rep in endpoints.HTTP_REPLICAS:
         shell=True,
     )
     print(f"{rep} running and detached")
+
+sleep(120)
