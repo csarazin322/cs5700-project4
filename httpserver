@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import requests
 import zlib
 import threading
-from socket import socket, AF_INET, SOCK_DGRAM
+from socket import socket, AF_INET, SOCK_STREAM, SOCK_DGRAM
 import sqlite3
 
 # parse arguments and store them accordingly
@@ -35,33 +35,38 @@ db.execute("CREATE TABLE IF NOT EXISTS CACHE (Path TEXT, Data BLOB);")
 
 
 def get_data(path):
+    connect_db_thread = sqlite3.connect("web_cache.db")
+    db_thread = connect_db_thread.cursor()
     # check if path starts with forward slash
     if len(path) > 0 and path[0] == "/":
         path = path[1:]
 
-    # attempt to get compressed data from the cache db
-    db.execute("SELECT Data FROM Cache WHERE Path = :Path", {"Path": path})
-    data_or_none = db.fetchone()
+    # attempt to get compressed data from the cache db_thread
+    db_thread.execute("SELECT Data FROM Cache WHERE Path = :Path", {"Path": path})
+    data_or_none = db_thread.fetchone()
 
     # get data from origin if None or unzip and return the cached data
     if data_or_none == None:
-        print(f"inserting {path}")
+        print(f"Getting {path} from origin")
         url = "http://" + ORIGIN + ":8080/" + path
         url_data = requests.get(url)
-        return url_data
+        return url_data.text
     else:
+        print(f"{path} FOUND IN CACHE")
         unzipped_data = zlib.decompress(data_or_none[0])
-        return unzipped_data
+        return unzipped_data.decode("utf-8")
 
 
 def serve_client(client_sock: socket, ret_addr):
     req = client_sock.recvfrom(10000)
+    print(f"Threaded and accepted request of: {req}")
     # extract path from request
-    req_type = req[0].decode("utf-8").split("\r\n")[0]
+    req_type = str(req[0], "ascii").split("\r\n")[0]
     req_toks = req_type.split()
     path = ""
     if req_toks[0] == "GET":
         path = req_toks[1]
+    print(f"Getting path: {path}")
     response = ""
     if path == "/grading/beacon":
         response = (
@@ -69,7 +74,7 @@ def serve_client(client_sock: socket, ret_addr):
             + "Content-Length: 0\nContent-Type: text/html\n\n"
         )
     else:
-        data = get_data(path).decode("utf-8")
+        data = get_data(path)
         response = (
             "HTTP/1.1 200 OK \r\n"
             + "Content-Length: "
@@ -78,7 +83,8 @@ def serve_client(client_sock: socket, ret_addr):
             + "Content-Type: text/html\n\n"
             + data
         )
-    client_sock.send(response)
+    print(f"Sending content for {path}")
+    client_sock.send(response.encode("utf-8"))
     client_sock.close()
 
 
@@ -88,11 +94,14 @@ sock = socket(AF_INET, SOCK_DGRAM)
 sock.connect(("10.0.0.0", 0))
 IP = sock.getsockname()[0]
 sock.close()
-http_sock = socket(AF_INET, SOCK_DGRAM)
-http_sock.bind((IP, PORT))
+http_sock = socket(AF_INET, SOCK_STREAM)
+http_sock.bind((IP, int(PORT)))
 http_sock.listen(1)
+print(f"Set up connection at IP: {IP} on Port: {PORT}")
 
 while True:
+    print(f"Waiting for connection")
     client_sock, ret_addr = http_sock.accept()
+    print(f"Accepted connection from {ret_addr}, attempting to thread")
     new_thread = threading.Thread(target=serve_client, args=[client_sock, ret_addr])
     new_thread.start()

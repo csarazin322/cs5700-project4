@@ -143,13 +143,16 @@ def get_closest_repl(request_ip):
         min_dist = sys.maxsize
         min_repl = "139.144.30.25"  # default, Atlanta, GA
         for repl_ip, repl_loc in http_locs.items():
+            print(f"comparing to {loc.latitude}")
             repl_dist = get_distance(
                 repl_loc[0], repl_loc[1], loc.latitude, loc.longitude
             )
+            print(f"distance from repl {repl_dist}")
             if repl_dist < min_dist:
                 min_dist = repl_dist
                 min_repl = repl_ip
         client_locs[request_ip] = min_repl
+        print(f"CLOSEST REPL: {min_repl}")
         return min_repl
     else:
         return existing_mapping

@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from asyncio import sleep
 import subprocess
 import endpoints
 
@@ -55,12 +56,23 @@ subprocess.run(
 
 
 # deploy HTTP server code and chmod 711
+preloading_procs: list[subprocess.Popen[bytes]] = []
 for rep in endpoints.HTTP_REPLICAS:
     # file_to_copy = ["httpserver", "preLoadCache.py", "topPages.py"]
-    subprocess.run(f"scp -i {KEYFILE} preLoadCache.py {USERNAME}@{rep}:~", shell=True)
-    subprocess.run(f"scp -i {KEYFILE} httpserver {USERNAME}@{rep}:~", shell=True)
-    subprocess.run(f"scp -i {KEYFILE} topPages.py {USERNAME}@{rep}:~", shell=True)
     subprocess.run(
-        f"ssh -i {KEYFILE} {USERNAME}@{rep} 'chmod 711 ~/httpserver & python3 ~/preLoadCache.py & rm ~/preLoadCache.py & rm ~/topPages.py & rm -rf ~/__pycache__'",
+        f"scp -i {KEYFILE} httpserver preLoadCache {USERNAME}@{rep}:~",
         shell=True,
     )
+    p = subprocess.Popen(
+        f"ssh -i {KEYFILE} {USERNAME}@{rep} 'chmod 711 ~/httpserver ~/preLoadCache && ~/preLoadCache && rm ~/preLoadCache'",
+        shell=True,
+    )
+    preloading_procs.append(p)
+
+# wait for all processes to finish so user does not start servers before they are done pre-cacheing
+p_count = 1
+for proc in preloading_procs:
+    print(f"Waiting for process {p_count} to finish")
+    proc.wait()
+    print(f"Process {p_count} finished")
+    p_count += 1
